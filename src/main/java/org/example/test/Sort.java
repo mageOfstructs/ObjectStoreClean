@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertTrue;
 
@@ -79,7 +80,10 @@ public class Sort {
 
     @Test
     public void testClassMembersCount() {
-        // unclear what that is
+        Comparator<ObjectStore> countCmp = Comparator.comparing(ObjectStore::directSize);
+        Stream<ObjectStore> sortedOSs = PersonManager.instance.load().getOs("Employees").streamOS().sorted(countCmp);
+        sortedOSs.flatMap(ObjectStore::directStream).forEachOrdered(emp -> System.out.println(emp.getClass() + " " + ((Employee)emp).getName()));
+        System.out.println(PersonManager.instance.showHierarchy());
     }
 
     @Test
