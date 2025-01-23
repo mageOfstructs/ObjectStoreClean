@@ -7,6 +7,7 @@ import org.example.data.airport.model13.Person;
 import org.example.data.airport.model13.Pilot;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -81,8 +82,21 @@ public class Sort {
     @Test
     public void testClassMembersCount() {
         Comparator<ObjectStore> countCmp = Comparator.comparing(ObjectStore::directSize);
-        Stream<ObjectStore> sortedOSs = PersonManager.instance.load().getOs("Employees").streamOS().sorted(countCmp);
-        sortedOSs.flatMap(ObjectStore::directStream).forEachOrdered(emp -> System.out.println(emp.getClass() + " " + ((Employee)emp).getName()));
+        Stream<ObjectStore> sortedOSs = PersonManager.instance.load().getOs("Employees").streamOS().sorted(countCmp.reversed());
+        List<Integer> sizes = new ArrayList<>();
+        sortedOSs.forEachOrdered(os -> {
+            for (Object o : os.toArrayDirect()) {
+                Employee emp = (Employee)o;
+                System.out.println(emp.getClass() + " " + ((Employee)emp).getName());
+            }
+            sizes.add(os.directSize());
+        });
+        if (!sizes.isEmpty()) {
+            int lastSize = sizes.get(0);
+            for (int i = 1; i < sizes.size(); i++) {
+                assertTrue(lastSize - sizes.get(i) >= 0);
+            }
+        }
         System.out.println(PersonManager.instance.showHierarchy());
     }
 

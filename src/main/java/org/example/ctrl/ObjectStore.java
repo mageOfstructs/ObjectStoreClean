@@ -491,7 +491,7 @@ public class ObjectStore<T> implements Serializable {
     for (ObjectStore os : subsets) {
       Object[] arr = os.toArray();
       for (int j = 0; j < arr.length; j++) {
-        arr[i++] = arr[j];
+        ret[i++] = arr[j];
       }
     }
     return ret;
@@ -546,8 +546,14 @@ public class ObjectStore<T> implements Serializable {
     return (Stream<? extends T>) Stream.concat(internal.stream(), subels);
   }
 
-  public Stream<T> directStream() {
-    return internal.stream();
+  public Object[] toArrayDirect() {
+    Object[] ret = new Object[directSize()];
+    int i = 0;
+    for (Object o : internal) {
+      ret[i] = o;
+      i++;
+    }
+    return ret;
   }
   
   public Stream<ObjectStore> streamOS() {
