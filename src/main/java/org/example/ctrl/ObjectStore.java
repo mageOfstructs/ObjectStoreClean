@@ -542,8 +542,16 @@ public class ObjectStore<T> implements Serializable {
   }
 
   public Stream<? extends T> stream() {
-    Stream<ObjectStore<? extends T>> subels = subsets.stream().flatMap(ObjectStore::stream);
-    return (Stream<? extends T>) Stream.concat(internal.stream(), subels);
+    return Stream.concat(internal.stream(), subsets.stream().flatMap(ObjectStore::stream));
+  }
+  private void streamList(List<Stream<T>> ret) {
+    ret.add(internal.stream());
+    subsets.forEach(sub -> sub.streamList(ret));
+  }
+  public List<Stream<T>> streamList() {
+    List<Stream<T>> ret = new LinkedList<>();
+    streamList(ret);
+    return ret;
   }
 
   public Object[] toArrayDirect() {
