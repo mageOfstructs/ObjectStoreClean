@@ -3,3 +3,6 @@ out
 *.obj
 *.iml
 *.zip
+.metadata
+jdt.ls-java-project
+boykisser*
