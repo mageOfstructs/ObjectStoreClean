@@ -12,9 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 public class CMDFrontend {
@@ -200,13 +198,18 @@ public class CMDFrontend {
                 while ((tableIndex = parsePotentialIndex(selectedTable)) == -1 && !contains(availTables, selectedTable)) {
                     System.out.println("Unknown table!");
                     System.out.print(">");
-                    selectedTable = s.nextLine();
+                    selectedTable = s.nextLine().toUpperCase();
+                    if ("QUIT".equals(selectedTable)) {
+                        t.close();
+                        return;
+                    }
                 }
 
                 selectedTable = tableIndex != -1 ? availTables[tableIndex-1] : selectedTable;
                 RawTable rt = parseTable(queryDb(selectedTable));
                 printTable(rt);
                 switchToTableView(selectedTable);
+                s.nextLine(); // make sure stdin is empty
             }
         } catch (SQLException e) {
             System.err.println("SQL Error: " + e.getMessage());
