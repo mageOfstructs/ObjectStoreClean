@@ -17,7 +17,7 @@ public class RaiseSusisSalary implements Function<Employee> {
     public Employee apply(Employee o) {
         Employee ret = null;
         if (o.getName().toLowerCase().equals("susi")) {
-            o.setSalary((long) (o.getSalary()*perc));
+            o.setSalary((int)(o.getSalary()*perc));
             ret = o;
         }
         return ret;
