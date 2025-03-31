@@ -1,11 +1,14 @@
 package org.example.data.airport.controllers;
 
+import org.example.ctrl.ConnectionFactory;
 import org.example.ctrl.Function;
 import org.example.ctrl.ObjectStore;
+import org.example.data.airport.model13.Employee;
 import org.example.data.airport.model13.Person;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -125,5 +128,23 @@ public enum PersonManager {
 
   public int size() {
     return internal.size();
+  }
+
+  /**
+   * loads employees from an external database using the Connection provided by ConnectionFactory
+   */
+  public void loadFromSQL() {
+    try {
+      ResultSet res = ConnectionFactory.getInstance().createStatement().executeQuery("SELECT * FROM employee");
+      while (res.next()) {
+        internal.add(Employee.fromQuery(res));
+      }
+    } catch (SQLException e) {
+      System.err.println("Could not fetch employees: " + e);
+    }
+    //ResultSet res = ConnectionFactory.getInstance().get().createStatement().executeQuery("SELECT * FROM employee");
+  }
+  public void clear() {
+    internal = new ObjectStore<>("Persons");
   }
 }
