@@ -1,5 +1,9 @@
 package org.example.data.airport.model13;
 
+import org.example.data.airport.frontends.ITermPrintable;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -8,7 +12,7 @@ public class Pilot extends Employee {
     private HashMap<String, Flight> flights = new HashMap<>();
     private HashSet<PlaneLicense> licenses = new HashSet<>(3);
 
-    public Pilot(String name, long salary) {
+    public Pilot(String name, int salary) {
         super(name, salary);
     }
 
@@ -20,5 +24,14 @@ public class Pilot extends Employee {
             flights.put(name, f);
         }
         return ret;
+    }
+
+    public static Pilot fromQuery(ResultSet rs) throws SQLException {
+        return new Pilot(rs.getString("name"), rs.getInt("salary"));
+    }
+
+    @Override
+    public String toPrintable() {
+        return ITermPrintable.concat(super.toPrintable(), flights.toString(), licenses.toString());
     }
 }
