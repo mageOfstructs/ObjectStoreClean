@@ -53,12 +53,13 @@ public class ObjectStore<T> implements Serializable {
     if (canonicalName.equals(osName)) {
       return add(o);
     } else {
-      for (ObjectStore os : this.subsets) {
+      return subsets.stream().filter(sub -> sub.add(osName, o)).findAny().isPresent();
+      /*for (ObjectStore os : this.subsets) {
         if (os.add(osName, o)) {
           return true;
         }
       }
-      return false;
+      return false;*/
     }
   }
 
@@ -77,11 +78,7 @@ public class ObjectStore<T> implements Serializable {
    */
   public int size() {
     //return internal.size() + subsets.stream().reduce(0, (os1, os2) -> os1.size() + os2.size());
-    int ret = internal.size();
-    for (ObjectStore os : subsets) {
-      ret += os.size();
-    }
-    return ret;
+    return (int) stream().count();
   }
 
   public int directSize() {
@@ -116,13 +113,15 @@ public class ObjectStore<T> implements Serializable {
     ObjectStore ret = null;
     if (canonicalName.equals(osName)) ret = this;
     if (ret == null) {
-      Iterator<ObjectStore> it = subsets.iterator();
+      Optional<ObjectStore> maybeOS = subsets.stream().filter(sub -> sub.canonicalName.equals(osName)).findAny();
+      ret = maybeOS.isPresent() ? maybeOS.get() : null;
+      /*Iterator<ObjectStore> it = subsets.iterator();
       while (it.hasNext() && ret == null) {
         ObjectStore os = it.next().getOs(osName);
         if (os != null) {
           ret = os;
         }
-      }
+      }*/
     }
     return ret;
   }
@@ -131,13 +130,15 @@ public class ObjectStore<T> implements Serializable {
     if (canonicalName.equals(osName)) {
       return remove(o);
     } else {
-      for (ObjectStore os : this.subsets) {
+      Optional<Integer> maybeInt = subsets.stream().map(sub -> sub.remove(osName, o)).filter(remRet -> remRet != -1).findAny();
+      return maybeInt.orElse(-1);
+      /*for (ObjectStore os : this.subsets) {
         int curRet = os.remove(osName, o);
         if (curRet != -1) {
           return curRet;
         }
       }
-      return -1;
+      return -1;*/
     }
   }
 
@@ -189,7 +190,8 @@ public class ObjectStore<T> implements Serializable {
    * @return number of times the function has modified an object
    */
   public int apply(Function<T> f) {
-    int ret = 0;
+    return (int) stream().map(o -> f.apply(o)).filter(res -> res != null).count();
+    /*int ret = 0;
     for (T el : internal) {
       if (f.apply(el) != null) {
         ret++;
@@ -198,7 +200,7 @@ public class ObjectStore<T> implements Serializable {
     for (ObjectStore os : subsets) {
       ret += os.apply(f);
     }
-    return ret;
+    return ret;*/
   }
 
   /**
@@ -314,13 +316,14 @@ public class ObjectStore<T> implements Serializable {
   }
 
   private void addNElements(Comparator<T> cmp, T obj, int count, Set<T> ret) {
-    Iterator<T> it = internal.iterator();
+    internal.stream().takeWhile(o -> ret.size() < count).forEach(o -> ret.add(o));
+    /*Iterator<T> it = internal.iterator();
     while (it.hasNext() && ret.size() < count) {
       T el = it.next();
       if (cmp.compare(el, obj) == 0) {
         ret.add(el);
       }
-    }
+    }*/
   }
 
   /**
@@ -332,7 +335,7 @@ public class ObjectStore<T> implements Serializable {
    * @param count
    * @param ret output pointer
    */
-  private void selectMostSpecific(Comparator<T> cmp, T obj, int count,
+  /*private void selectMostSpecific(Comparator<T> cmp, T obj, int count,
                                   Set<T> ret) {
     if (ret.size() < count) {
       Iterator<ObjectStore> subsetIt = subsets.iterator();
@@ -341,7 +344,7 @@ public class ObjectStore<T> implements Serializable {
       }
       addNElements(cmp, obj, count, ret);
     }
-  }
+  }*/
 
   /**
    * searches for the most specific objects, that match the criteria
@@ -402,10 +405,11 @@ public class ObjectStore<T> implements Serializable {
                                  Set<T> ret) {
     addNElements(cmp, obj, count, ret);
     if (count > ret.size()) {
-      Iterator<ObjectStore> itSubsets = subsets.iterator();
+      subsets.stream().takeWhile(sub -> ret.size() < count).forEach(sub -> sub.selectMostGeneral(cmp, obj, count, ret));
+      /*Iterator<ObjectStore> itSubsets = subsets.iterator();
       while (itSubsets.hasNext() && ret.size() < count) {
         itSubsets.next().selectMostGeneral(cmp, obj, count, ret);
-      }
+      }*/
     }
   }
 
@@ -418,8 +422,11 @@ public class ObjectStore<T> implements Serializable {
    * @return count elements, where cmp.compare(el, obj) == 0
    */
   public Set<T> selectMostGeneral(Comparator<T> cmp, T obj, int count) {
-    Set<T> ret = new HashSet<>(count);
-    selectMostGeneral(cmp, obj, count, ret);
+    Set<T> ret = internal.stream().filter(o -> cmp.compare(o, obj) == 0).collect(Collectors.toSet());
+    subsets.stream().forEach(sub -> {
+      ret.addAll(sub.selectMostGeneral(cmp, obj, count));
+    });
+    //selectMostGeneral(cmp, obj, count, ret);
     return ret;
   }
 
@@ -464,17 +471,21 @@ public class ObjectStore<T> implements Serializable {
   private void selectPreserving(Comparator<T> cmp, T obj,
                                 ObjectStore<T> parent) {
     ObjectStore<T> ret = new ObjectStore<>(parent, this.canonicalName);
-    addSelectedMembers(cmp, obj, ret);
+    internal.stream().filter(el -> cmp.compare(el, obj) == 0).forEach(el -> ret.add(el));
+    subsets.stream().forEach(sub -> sub.selectPreserving(cmp, obj, ret));
+    /*addSelectedMembers(cmp, obj, ret);
     for (ObjectStore subset : subsets) {
       subset.selectPreserving(cmp, obj, ret);
-    }
+    }*/
   }
   public ObjectStore<T> selectPreserving(Comparator<T> cmp, T obj) {
     ObjectStore<T> ret = new ObjectStore<>(this.canonicalName);
-    addSelectedMembers(cmp, obj, ret);
+    internal.stream().filter(el -> cmp.compare(el, obj) == 0).forEach(el -> ret.add(el));
+    subsets.stream().forEach(sub -> sub.selectPreserving(cmp, obj, ret));
+    /*addSelectedMembers(cmp, obj, ret);
     for (ObjectStore subset : subsets) {
       subset.selectPreserving(cmp, obj, ret);
-    }
+    }*/
     return ret;
   }
 
@@ -482,7 +493,8 @@ public class ObjectStore<T> implements Serializable {
    * @return this object store elements in form of an array.
    */
   public Object[] toArray() {
-    Object[] ret = new Object[size()];
+    return stream().toArray();
+    /*Object[] ret = new Object[size()];
     int i = 0;
     for (Object o : internal) {
       ret[i] = o;
@@ -494,7 +506,7 @@ public class ObjectStore<T> implements Serializable {
         ret[i++] = arr[j];
       }
     }
-    return ret;
+    return ret;*/
   }
 
   /**
@@ -542,7 +554,7 @@ public class ObjectStore<T> implements Serializable {
   }
 
   public Stream<? extends T> stream() {
-    return Stream.concat(internal.stream(), subsets.stream().flatMap(ObjectStore::stream));
+    return Stream.concat(internal.stream(), subsets.stream().parallel().flatMap(ObjectStore::stream));
   }
   private void streamList(List<Stream<T>> ret) {
     ret.add(internal.stream());
@@ -555,13 +567,14 @@ public class ObjectStore<T> implements Serializable {
   }
 
   public Object[] toArrayDirect() {
-    Object[] ret = new Object[directSize()];
+    return internal.toArray();
+    /*Object[] ret = new Object[directSize()];
     int i = 0;
     for (Object o : internal) {
       ret[i] = o;
       i++;
     }
-    return ret;
+    return ret;*/
   }
   
   public Stream<ObjectStore> streamOS() {
