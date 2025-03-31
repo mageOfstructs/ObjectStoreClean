@@ -1,12 +1,10 @@
 package org.example.data.airport.model13;
 
-import org.example.data.airport.frontends.ITermPrintable;
-
 import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public abstract class Person implements Serializable, ITermPrintable {
+public abstract class Person implements Serializable {
     private static long curPID = 0;
     protected long pid;
     private String name;

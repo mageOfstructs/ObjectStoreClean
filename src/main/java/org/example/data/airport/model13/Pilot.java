@@ -1,7 +1,5 @@
 package org.example.data.airport.model13;
 
-import org.example.data.airport.frontends.ITermPrintable;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -28,10 +26,5 @@ public class Pilot extends Employee {
 
     public static Pilot fromQuery(ResultSet rs) throws SQLException {
         return new Pilot(rs.getString("name"), rs.getInt("salary"));
-    }
-
-    @Override
-    public String toPrintable() {
-        return ITermPrintable.concat(super.toPrintable(), flights.toString(), licenses.toString());
     }
 }
